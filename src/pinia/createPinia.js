@@ -1,6 +1,6 @@
 // 存放的是 createPinia API
 import { ref, effectScope } from "vue";
-const piniaSymbol = Symbol();
+import { piniaSymbol } from "./rootStore";
 
 export function createPinia() {
   const scope = effectScope();
