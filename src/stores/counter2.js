@@ -1,4 +1,4 @@
-import { defineStore } from "pinia";
+import { defineStore } from "@/pinia";
 import { ref, computed } from "vue";
 
 // defineSotre 中的 id 是独一无二的

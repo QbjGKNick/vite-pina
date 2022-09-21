@@ -17,27 +17,10 @@ import {
 } from "vue";
 import { piniaSymbol } from "./rootStore";
 
-function createOptionsStore(id, options, pinia) {
-  const { state, actions, getters } = options;
+function createSetupStore(id, setup, pinia) {
   let scope;
   // 后续一些不是用户定义的属性和方法，内置的 api 会增加到这个 store 上
   const store = reactive({}); // store就是一个响应式对象而已
-
-  function setup() {
-    // 这里面会对用户传递的 state，actIons getters 做处理
-    const localState = (pinia.state.value[id] = state ? state() : {});
-
-    return Object.assign(
-      localState, // 用户的状态
-      actions, // 用户的动作
-      Object.keys(getters || {}).reduce((memo, name) => {
-        memo[name] = computed(() => {
-          return getters[name].call(store);
-        });
-        return memo;
-      }, {})
-    );
-  }
 
   // 父亲可以停止所有
   const setupStore = pinia._e.run(() => {
@@ -73,6 +56,29 @@ function createOptionsStore(id, options, pinia) {
   return store;
 }
 
+function createOptionsStore(id, options, pinia) {
+  const { state, actions, getters } = options;
+
+  function setup() {
+    // 这里面会对用户传递的 state，actIons getters 做处理
+    const localState = (pinia.state.value[id] = state ? state() : {});
+
+    return Object.assign(
+      localState, // 用户的状态
+      actions, // 用户的动作
+      Object.keys(getters || {}).reduce((memo, name) => {
+        memo[name] = computed(() => {
+          let store = pinia._s.get(id);
+          return getters[name].call(store);
+        });
+        return memo;
+      }, {})
+    );
+  }
+
+  return createSetupStore(id, setup, pinia);
+}
+
 export function defineStore(idOrOptions, setup) {
   let id;
   let options;
@@ -85,6 +91,7 @@ export function defineStore(idOrOptions, setup) {
     id = idOrOptions.id;
   }
   // 可能 setup 是一个函数，这个稍后处理
+  const isSetupStore = typeof setup === "function";
 
   function useStore() {
     // 在这里我们拿到的 store 应该是同一个
@@ -94,8 +101,12 @@ export function defineStore(idOrOptions, setup) {
 
     if (!pinia._s.has(id)) {
       // 第一次 useStore
-      // 如果是第一次 则创建映射关系
-      createOptionsStore(id, options, pinia);
+      if (isSetupStore) {
+        createSetupStore(id, setup, pinia);
+      } else {
+        // 如果是第一次 则创建映射关系
+        createOptionsStore(id, options, pinia);
+      }
     }
     // 后续通过 id 获取对应的 store 返回
     const store = pinia._s.get(id);
