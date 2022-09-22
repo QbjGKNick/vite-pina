@@ -28,6 +28,8 @@ export function createPinia() {
   return pinia;
 }
 
+// 目前我们的 pinia 可以在组件中使用
+
 // createPinia()，默认是一个插件具备一个 install 方法
 // _s 用来存储 id-> store
 // state 用来存储所有状态的

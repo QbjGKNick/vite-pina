@@ -14,13 +14,26 @@ import {
   reactive,
   effectScope,
   computed,
+  isRef,
+  isReactive,
 } from "vue";
 import { piniaSymbol } from "./rootStore";
 
-function createSetupStore(id, setup, pinia) {
+function isComputed(v) { // 计算属性是 ref 同时也是一个 effect
+  return !!(isRef(v) && v.effect)
+}
+
+// 核心方法
+function createSetupStore(id, setup, pinia, isOption) {
   let scope;
   // 后续一些不是用户定义的属性和方法，内置的 api 会增加到这个 store 上
   const store = reactive({}); // store就是一个响应式对象而已
+
+  const initialState = pinia.state.value[id] // 对于 setup api 没有初始化过状态
+
+  if (!initialState && !isOption) { // setup api
+    pinia.state.value[id] = {}
+  }
 
   // 父亲可以停止所有
   const setupStore = pinia._e.run(() => {
@@ -46,11 +59,19 @@ function createSetupStore(id, setup, pinia) {
       // 对 actions 中 this 和 后续的逻辑进行处理，函数劫持
       setupStore[key] = wrapAction(key, prop);
     }
+
+    // 如果看这个值是不是状态
+    // computed 也是 ref
+    if ((isRef(prop) && !isComputed(prop)) || isReactive(prop)) {
+      if (!isOption) {
+        pinia.state.value[id][key] = prop
+      }
+    }
   }
 
   // pinia._e.stop(); // 停止全部
   // scope.stop() 只停止自己
-
+  console.log(pinia.state.value)
   pinia._s.set(id, store); // 将 store 和 id 映射起来
   Object.assign(store, setupStore);
   return store;
@@ -76,7 +97,7 @@ function createOptionsStore(id, options, pinia) {
     );
   }
 
-  return createSetupStore(id, setup, pinia);
+  return createSetupStore(id, setup, pinia, true);
 }
 
 export function defineStore(idOrOptions, setup) {
