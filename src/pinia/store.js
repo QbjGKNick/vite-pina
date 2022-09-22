@@ -16,6 +16,7 @@ import {
   computed,
   isRef,
   isReactive,
+  toRefs,
 } from "vue";
 import { piniaSymbol } from "./rootStore";
 
@@ -23,11 +24,44 @@ function isComputed(v) { // 计算属性是 ref 同时也是一个 effect
   return !!(isRef(v) && v.effect)
 }
 
+function isObject(value) {
+  return typeof value === 'object' && value !== null
+}
+
+// 递归合并两个对象
+function mergeReactiveObject(target, state) {
+  for(let key in state) {
+    let oldValue = target[key]
+    let newValue = state[key] // 这里循环的时候，丧失了响应式
+
+    if (isObject(oldValue) && isObject(newValue)) {
+      target[key] = mergeReactiveObject(oldValue, newValue)
+    } else {
+      target[key] = newValue
+    }
+  }
+  return target
+}
+
 // 核心方法
 function createSetupStore(id, setup, pinia, isOption) {
   let scope;
   // 后续一些不是用户定义的属性和方法，内置的 api 会增加到这个 store 上
-  const store = reactive({}); // store就是一个响应式对象而已
+
+  function $patch(partialStoreOrMutatior) {
+    if (typeof partialStoreOrMutatior === 'object') {
+      // 用新的状态合并老的状态
+      mergeReactiveObject(pinia.state.value[id], partialStoreOrMutatior)
+    } else {
+      partialStoreOrMutatior(pinia.state.value[id])
+    }
+  }
+  
+  const partialStore = {
+    $patch
+  }
+
+  const store = reactive(partialStore); // store就是一个响应式对象而已
 
   const initialState = pinia.state.value[id] // 对于 setup api 没有初始化过状态
 
@@ -82,7 +116,9 @@ function createOptionsStore(id, options, pinia) {
 
   function setup() {
     // 这里面会对用户传递的 state，actIons getters 做处理
-    const localState = (pinia.state.value[id] = state ? state() : {});
+    pinia.state.value[id] = state ? state() : {}
+
+    const localState = toRefs(pinia.state.value[id]) // 我们需要将状态转成 ref，普通值是没有响应式的，需要将其转成响应式
 
     return Object.assign(
       localState, // 用户的状态

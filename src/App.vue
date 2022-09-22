@@ -5,7 +5,10 @@ const store1 = useCounterStore1();
 const { increment } = useCounterStore1();
 const handleClick1 = () => {
   // store1.increment(3);
-  increment(3);
+  // increment(3);
+  store1.$patch(state => {
+    state.count = 2000
+  })
 };
 
 const store2 = useCounterStore2();
