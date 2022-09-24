@@ -34,6 +34,14 @@ store2.$onAction(function ({ after, onError }) {
     console.log("error", err);
   });
 });
+
+const handleDispose = () => {
+  store1.$dispose(); // scope.run 收集 effect 的   scope.stop 是停止 effect
+};
+
+const handleDisposeAll = () => {
+  // store1._p._e.stop() // 我们可以终止所有的 effect，但是很遗憾，pinia 没有提供这个方法
+};
 </script>
 
 <template>
@@ -42,12 +50,15 @@ store2.$onAction(function ({ after, onError }) {
   {{ store1.double }}
   <button @click="handleClick1">修改状态</button>
   <button @click="handleReset1">重置状态</button>
+
+  <button @click="handleDispose">取消响应式</button>
   <hr color="red" />
 
   --------------setup---------------------- <br />
   {{ store2.count }} /
   {{ store2.double }}
   <button @click="handleClick2">修改状态</button>
+  <button @click="handleDisposeAll">取消全部响应式</button>
 </template>
 
 <style scoped></style>

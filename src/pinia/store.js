@@ -76,6 +76,11 @@ function createSetupStore(id, setup, pinia, isOption) {
       );
     },
     $onAction: addSubscription.bind(null, actionSubscriptions),
+    $dispose() {
+      scope.stop(); // 清除响应式
+      actionSubscriptions = []; // 取消订阅
+      pinia._s.delete(id);
+    },
   };
 
   const store = reactive(partialStore); // store就是一个响应式对象而已
