@@ -20,27 +20,28 @@ import {
 } from "vue";
 import { piniaSymbol } from "./rootStore";
 
-function isComputed(v) { // 计算属性是 ref 同时也是一个 effect
-  return !!(isRef(v) && v.effect)
+function isComputed(v) {
+  // 计算属性是 ref 同时也是一个 effect
+  return !!(isRef(v) && v.effect);
 }
 
 function isObject(value) {
-  return typeof value === 'object' && value !== null
+  return typeof value === "object" && value !== null;
 }
 
 // 递归合并两个对象
 function mergeReactiveObject(target, state) {
-  for(let key in state) {
-    let oldValue = target[key]
-    let newValue = state[key] // 这里循环的时候，丧失了响应式
+  for (let key in state) {
+    let oldValue = target[key];
+    let newValue = state[key]; // 这里循环的时候，丧失了响应式
 
     if (isObject(oldValue) && isObject(newValue)) {
-      target[key] = mergeReactiveObject(oldValue, newValue)
+      target[key] = mergeReactiveObject(oldValue, newValue);
     } else {
-      target[key] = newValue
+      target[key] = newValue;
     }
   }
-  return target
+  return target;
 }
 
 // 核心方法
@@ -49,24 +50,25 @@ function createSetupStore(id, setup, pinia, isOption) {
   // 后续一些不是用户定义的属性和方法，内置的 api 会增加到这个 store 上
 
   function $patch(partialStoreOrMutatior) {
-    if (typeof partialStoreOrMutatior === 'object') {
+    if (typeof partialStoreOrMutatior === "object") {
       // 用新的状态合并老的状态
-      mergeReactiveObject(pinia.state.value[id], partialStoreOrMutatior)
+      mergeReactiveObject(pinia.state.value[id], partialStoreOrMutatior);
     } else {
-      partialStoreOrMutatior(pinia.state.value[id])
+      partialStoreOrMutatior(pinia.state.value[id]);
     }
   }
-  
+
   const partialStore = {
-    $patch
-  }
+    $patch,
+  };
 
   const store = reactive(partialStore); // store就是一个响应式对象而已
 
-  const initialState = pinia.state.value[id] // 对于 setup api 没有初始化过状态
+  const initialState = pinia.state.value[id]; // 对于 setup api 没有初始化过状态
 
-  if (!initialState && !isOption) { // setup api
-    pinia.state.value[id] = {}
+  if (!initialState && !isOption) {
+    // setup api
+    pinia.state.value[id] = {};
   }
 
   // 父亲可以停止所有
@@ -98,14 +100,14 @@ function createSetupStore(id, setup, pinia, isOption) {
     // computed 也是 ref
     if ((isRef(prop) && !isComputed(prop)) || isReactive(prop)) {
       if (!isOption) {
-        pinia.state.value[id][key] = prop
+        pinia.state.value[id][key] = prop;
       }
     }
   }
 
   // pinia._e.stop(); // 停止全部
   // scope.stop() 只停止自己
-  console.log(pinia.state.value)
+  console.log(pinia.state.value);
   pinia._s.set(id, store); // 将 store 和 id 映射起来
   Object.assign(store, setupStore);
   return store;
@@ -116,9 +118,9 @@ function createOptionsStore(id, options, pinia) {
 
   function setup() {
     // 这里面会对用户传递的 state，actIons getters 做处理
-    pinia.state.value[id] = state ? state() : {}
+    pinia.state.value[id] = state ? state() : {};
 
-    const localState = toRefs(pinia.state.value[id]) // 我们需要将状态转成 ref，普通值是没有响应式的，需要将其转成响应式
+    const localState = toRefs(pinia.state.value[id]); // 我们需要将状态转成 ref，普通值是没有响应式的，需要将其转成响应式
 
     return Object.assign(
       localState, // 用户的状态
@@ -133,7 +135,13 @@ function createOptionsStore(id, options, pinia) {
     );
   }
 
-  return createSetupStore(id, setup, pinia, true);
+  const store = createSetupStore(id, setup, pinia, true);
+  store.$reset = function () {
+    const newState = state ? state() : {};
+    store.$patch((state) => {
+      Object.assign(state, newState); // 默认状态覆盖老状态
+    });
+  };
 }
 
 export function defineStore(idOrOptions, setup) {
