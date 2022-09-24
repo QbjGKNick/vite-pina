@@ -60,7 +60,7 @@ function createSetupStore(id, setup, pinia, isOption) {
     }
   }
 
-  const actionSubscriptions = [];
+  let actionSubscriptions = [];
   const partialStore = {
     $patch,
     $subscribe(callback, options = {}) {
@@ -164,7 +164,7 @@ function createSetupStore(id, setup, pinia, isOption) {
   Object.assign(store, setupStore);
 
   // 可以操作 store 的所有属性
-  Object.defineProperties(store, "$state", {
+  Object.defineProperty(store, "$state", {
     get: () => pinia.state.value[id],
     set: (state) => $patch(($state) => Object.assign($state, state)),
   });
