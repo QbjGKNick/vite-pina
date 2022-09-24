@@ -162,6 +162,13 @@ function createSetupStore(id, setup, pinia, isOption) {
   console.log(pinia.state.value);
   pinia._s.set(id, store); // 将 store 和 id 映射起来
   Object.assign(store, setupStore);
+
+  // 可以操作 store 的所有属性
+  Object.defineProperties(store, "$state", {
+    get: () => pinia.state.value[id],
+    set: (state) => $patch(($state) => Object.assign($state, state)),
+  });
+
   return store;
 }
 
