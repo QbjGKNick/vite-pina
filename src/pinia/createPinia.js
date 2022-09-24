@@ -8,8 +8,13 @@ export function createPinia() {
   // scope.stop() 可以通过一个方法全部停止响应式
 
   // 状态里面 可能会存放 计算属性，computed
-
+  const _p = [];
   const pinia = {
+    use(plugin) {
+      _p.push(plugin);
+      return this;
+    },
+    _p,
     _s: new Map(), // 这里用这个 map 来存放所有的 store { counter1 -> store, counter2 -> store}
     _e: scope,
     install(app) {

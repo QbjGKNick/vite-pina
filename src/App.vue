@@ -6,11 +6,11 @@ const { increment } = useCounterStore1();
 const handleClick1 = () => {
   // store1.increment(3);
   // increment(3);
-  // store1.$patch((state) => {
-  //   state.count = 2000;
-  // });
+  store1.$patch((state) => {
+    state.count = 2000;
+  });
 
-  store1.$state = { count: 2000 };
+  // store1.$state = { count: 2000 };
 };
 
 const handleReset1 = () => {

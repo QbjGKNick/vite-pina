@@ -160,6 +160,7 @@ function createSetupStore(id, setup, pinia, isOption) {
   // pinia._e.stop(); // 停止全部
   // scope.stop() 只停止自己
   console.log(pinia.state.value);
+  store.$id = id;
   pinia._s.set(id, store); // 将 store 和 id 映射起来
   Object.assign(store, setupStore);
 
@@ -167,6 +168,14 @@ function createSetupStore(id, setup, pinia, isOption) {
   Object.defineProperty(store, "$state", {
     get: () => pinia.state.value[id],
     set: (state) => $patch(($state) => Object.assign($state, state)),
+  });
+
+  pinia._p.forEach((plugin) => {
+    // 将插件的返回值作为 store 的属性
+    Object.assign(
+      store,
+      scope.run(() => plugin({ store }))
+    );
   });
 
   return store;
