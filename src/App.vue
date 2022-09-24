@@ -1,15 +1,15 @@
 <script setup>
 import { useCounterStore1 } from "./stores/counter1";
 import { useCounterStore2 } from "./stores/counter2";
+import { storeToRefs } from "@/pinia/storeToRefs";
 const store1 = useCounterStore1();
 const { increment } = useCounterStore1();
 const handleClick1 = () => {
   // store1.increment(3);
-  // increment(3);
-  store1.$patch((state) => {
-    state.count = 2000;
-  });
-
+  increment(3);
+  // store1.$patch((state) => {
+  //   state.count = 2000;
+  // });
   // store1.$state = { count: 2000 };
 };
 
@@ -44,12 +44,15 @@ const handleDispose = () => {
 const handleDisposeAll = () => {
   // store1._p._e.stop() // 我们可以终止所有的 effect，但是很遗憾，pinia 没有提供这个方法
 };
+
+// 我们用 pinia 解构 store 不要用 toRefs 要使用 storeToRefs 可以跳过函数的处理
+const { count, double } = storeToRefs(store1); // toRefs 的原理 为什么不用 toRefs
 </script>
 
 <template>
   --------------options---------------------- <br />
-  {{ store1.count }} /
-  {{ store1.double }}
+  {{ count }} /
+  {{ double }}
   <button @click="handleClick1">修改状态</button>
   <button @click="handleReset1">重置状态</button>
 

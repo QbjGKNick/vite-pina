@@ -8,6 +8,7 @@
 // id + options
 // options
 // id + setup
+import { setActivePinia } from "pinia";
 import {
   getCurrentInstance,
   inject,
@@ -19,6 +20,7 @@ import {
   toRefs,
   watch,
 } from "vue";
+import { activePinia } from "./createPinia";
 import { piniaSymbol } from "./rootStore";
 import { addSubscription, triggerSubscription } from "./subscribe";
 
@@ -229,9 +231,12 @@ export function defineStore(idOrOptions, setup) {
   function useStore() {
     // 在这里我们拿到的 store 应该是同一个
     let instance = getCurrentInstance();
-    const pinia = instance && inject(piniaSymbol);
+    let pinia = instance && inject(piniaSymbol);
     // console.log(pinia);
-
+    if (pinia) {
+      setActivePinia(pinia);
+    }
+    pinia = activePinia; // 将全局变量给你 这个一定存在
     if (!pinia._s.has(id)) {
       // 第一次 useStore
       if (isSetupStore) {

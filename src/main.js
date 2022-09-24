@@ -4,6 +4,7 @@ import App from "./App.vue";
 
 // import { createPinia } from "pinia";
 import { createPinia } from "@/pinia";
+import { useCounterStore1 } from "./stores/counter1";
 
 const app = createApp(App);
 
@@ -53,3 +54,7 @@ pinia.use(function ({ store }) {
 app.use(pinia); // 插件必须要有一个 install 方法
 
 app.mount("#app");
+
+// 异步路由，在任何地方都可以使用 pinia
+const store = useCounterStore1(); // inject 方法无法使用
+console.log(store.count);

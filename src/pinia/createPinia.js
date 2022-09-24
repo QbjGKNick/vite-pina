@@ -2,6 +2,9 @@
 import { ref, effectScope } from "vue";
 import { piniaSymbol } from "./rootStore";
 
+export let activePinia; // 全局变量
+export const setActivePinia = (pinia) => (activePinia = pinia);
+
 export function createPinia() {
   const scope = effectScope();
   const state = scope.run(() => ref({})); // 用来存储每个 store 的 state 的
@@ -21,7 +24,7 @@ export function createPinia() {
       // 对于 pinia 而言，我们希望让它去管理所有的 store
       // pinia 要去收集所有 store 的信息，过一会想卸载 store
       // console.log(app);
-
+      setActivePinia(pinia);
       // 如何让所有的 store 都能获取到这个 pinia 对象
       app.provide(piniaSymbol, pinia); // 所有组件都可以通过 app.inject(piniaSymbol)
 
