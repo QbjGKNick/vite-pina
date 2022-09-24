@@ -1,4 +1,5 @@
-import { defineStore } from "@/pinia";
+import { defineStore } from "pinia";
+// import { defineStore } from "@/pinia";
 
 // defineSotre 中的 id 是独一无二的
 // { counter => state, counter => state }

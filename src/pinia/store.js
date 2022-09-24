@@ -17,8 +17,10 @@ import {
   isRef,
   isReactive,
   toRefs,
+  watch,
 } from "vue";
 import { piniaSymbol } from "./rootStore";
+import { addSubscription, triggerSubscription } from "./subscribe";
 
 function isComputed(v) {
   // 计算属性是 ref 同时也是一个 effect
@@ -58,8 +60,22 @@ function createSetupStore(id, setup, pinia, isOption) {
     }
   }
 
+  const actionSubscriptions = [];
   const partialStore = {
     $patch,
+    $subscribe(callback, options = {}) {
+      // 每次状态变化都会触发此函数
+      scope.run(() =>
+        watch(
+          pinia.state.value[id],
+          (state) => {
+            callback({ storeId: id }, state);
+          },
+          options
+        )
+      );
+    },
+    $onAction: addSubscription.bind(null, actionSubscriptions),
   };
 
   const store = reactive(partialStore); // store就是一个响应式对象而已
@@ -78,8 +94,39 @@ function createSetupStore(id, setup, pinia, isOption) {
   });
 
   function wrapAction(name, action) {
+    // 对 actIon 做拦截
     return function () {
-      let ret = action.apply(store, arguments);
+      const afterCallbackList = [];
+      const onErrorCallbackList = [];
+
+      function after(callback) {
+        afterCallbackList.push(callback);
+      }
+
+      function onError(callback) {
+        onErrorCallbackList.push(callback);
+      }
+
+      triggerSubscription(actionSubscriptions, { after, onError });
+      let ret;
+      try {
+        ret = action.apply(store, arguments);
+      } catch (err) {
+        triggerSubscription(onErrorCallbackList, err);
+      }
+
+      if (ret instanceof Promise) {
+        // actIon 可以写成 Promise
+        return ret
+          .then((value) => {
+            return triggerSubscription(afterCallbackList, value);
+          })
+          .catch((err) => {
+            triggerSubscription(onErrorCallbackList, err);
+            return Promise.reject(err);
+          });
+      }
+      triggerSubscription(afterCallbackList, ret);
 
       // action 执行后可能是 promise
       // todo ...
